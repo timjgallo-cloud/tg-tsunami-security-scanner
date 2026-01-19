@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex-row" style="margin-bottom: 2rem;">
+  <div style="flex:1;">
+    <h1>Assessment Report</h1>
+    <p style="color:var(--text-secondary)">Execution ID: {{ execution_id }}</p>
+  </div>
+  <div>
+    <a href="/"><button style="background:var(--bg-secondary); border:1px solid var(--border-color);">Back to
+        Dashboard</button></a>
+  </div>
+</div>
+
+{% if enriched %}
+<div class="alert alert-success">
+  <strong>GTI Enrichment Active:</strong> Vulnerabilities have been analyzed with Google Threat Intelligence.
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Detailed Findings</h2>
+  <!-- This is where we would iterate over 'data' to show nice rows -->
+  <pre style="max-height: 500px; overflow: auto; background:#111; color:#eee;">{{ data | tojson(indent=2) }}</pre>
+</div>
+{% endblock %}

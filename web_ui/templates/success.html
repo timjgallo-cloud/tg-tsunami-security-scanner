@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex-row" style="margin-bottom: 2rem;">
+  <div class="stat-card">
+    <div style="color:var(--text-secondary); margin-bottom: 10px;">STATUS</div>
+    <div class="stat-value" style="color: #4bce97;">RUNNING</div>
+  </div>
+  <div class="stat-card">
+    <div style="color:var(--text-secondary); margin-bottom: 10px;">EXECUTION ID</div>
+    <div class="stat-value" style="font-size: 1.2rem;">{{ execution_id }}</div>
+  </div>
+  <div class="stat-card">
+    <div style="color:var(--text-secondary); margin-bottom: 10px;">TARGET</div>
+    <div class="stat-value" style="font-size: 1.2rem;">{{ target }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2><span style="color:var(--accent-blue);">●</span> Live Activity Log</h2>
+  <div class="terminal-log">
+    [INFO] Initializing Tsunami Scanner...
+    [INFO] Target: {{ target }}
+    [INFO] Job dispatched to Cloud Run.
+    [INFO] Waiting for results (polling GCS)...
+    ...
+  </div>
+  <div style="margin-top: 20px; text-align:right;">
+    <a href="/results/{{ execution_id }}" style="text-decoration:none;">
+      <button>View Results Report</button>
+    </a>
+  </div>
+</div>
+
+<div class="alert"
+  style="background: rgba(27, 110, 243, 0.1); border-left: 4px solid var(--accent-blue); color: #8ab4f8;">
+  <strong>Note:</strong> The scan is running asynchronously. You can close this page and check the "Recent Activity"
+  list later.
+</div>
+{% endblock %}

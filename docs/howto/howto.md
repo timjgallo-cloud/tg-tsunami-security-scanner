@@ -239,5 +239,7 @@ whole category instead.
 We do not provide support for building Tsunami outside of our docker
 environment.
 
-You can use the Dockerfile provided in the repositories to build your own
-toolchain if you so wish.
+
+## Stitch Cloud Deployment
+
+For deploying Tsunami with the "Stitch" Web UI on Google Cloud (Cloud Run), please refer to the **Stitch Cloud UI Deployment** section in the main [README](../../README.md).

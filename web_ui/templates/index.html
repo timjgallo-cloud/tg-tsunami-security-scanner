@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+  <h1>New Scan Configuration</h1>
+  <p style="color: var(--text-secondary); margin-bottom: 2rem;">Select a target to launch a security assessment powered
+    by Tsunami.</p>
+
+  <form action="/scan" method="post">
+    <label for="target">TARGET IP / HOSTNAME</label>
+    <input type="text" id="target" name="target" placeholder="e.g. 10.128.0.5 or scanme.nmap.org" required autofocus>
+
+    <div class="flex-row">
+      <div style="flex:1">
+        <label>PROFILE</label>
+        <select
+          style="width:100%; padding:10px; background:var(--bg-primary); border:1px solid var(--border-color); color:white; border-radius:4px;">
+          <option>Standard Scan (Tsunami)</option>
+          <option>Aggressive (Full Plugins)</option>
+        </select>
+      </div>
+      <div style="flex:1"></div>
+    </div>
+    <br>
+    <div style="display:flex; justify-content: flex-end;">
+      <button type="submit">Launch Assessment</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Recent Activity</h2>
+  <table style="width:100%; text-align:left; color: var(--text-secondary); border-collapse: collapse;">
+    <thead>
+      <tr style="border-bottom: 1px solid var(--border-color);">
+        <th style="padding: 10px;">ID</th>
+        <th style="padding: 10px;">Target</th>
+        <th style="padding: 10px;">Status</th>
+        <th style="padding: 10px;">Risk</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding: 10px;">#1024</td>
+        <td style="padding: 10px;">192.168.1.1</td>
+        <td style="padding: 10px;"><span style="color:#81c995">Completed</span></td>
+        <td style="padding: 10px;"><span style="color:var(--text-secondary)">None</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}
