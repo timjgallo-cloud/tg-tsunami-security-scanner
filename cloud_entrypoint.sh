@@ -2,7 +2,7 @@
 #!/bin/bash
 set -e
 
-# Required Env Vars: TARGET, GCS_BUCKET, EXECUTION_ID
+# Required Env Vars: TARGET, GCS_BUCKET, EXECUTION_ID, UPLOAD_URL
 
 if [ -z "$TARGET" ]; then
   echo "Error: TARGET env var is not set."
@@ -14,6 +14,11 @@ if [ -z "$GCS_BUCKET" ]; then
   exit 1
 fi
 
+if [ -z "$UPLOAD_URL" ]; then
+  echo "Error: UPLOAD_URL env var is not set. Required for Signed URL upload."
+  exit 1
+fi
+
 # Fallback for ID
 EXECUTION_ID=${EXECUTION_ID:-$(date +%s)}
 OUTPUT_FILE="/tmp/${EXECUTION_ID}.json"
@@ -21,40 +26,38 @@ OUTPUT_FILE="/tmp/${EXECUTION_ID}.json"
 echo "Starting Tsunami scan for target: $TARGET"
 echo "Execution ID: $EXECUTION_ID"
 
-# 1. Run Tsunami Scanner
-# Adjust the classpath and flags as needed for the specific Tsunami build
-# We assume the jar is at /usr/tsunami/tsunami.jar
-java -cp "/usr/tsunami/tsunami.jar:/usr/tsunami/py_server" \
+# 1. Run Tsunami Scanner with JVM Container Memory Tuning
+java -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC \
+  -cp "/usr/tsunami/tsunami.jar:/usr/tsunami/py_server" \
   -Dtsunami-config.location=/usr/tsunami/tsunami.yaml \
   com.google.tsunami.main.cli.TsunamiCli \
   --ip-v4-target="$TARGET" \
   --scan-results-local-output-format=JSON \
   --scan-results-local-output-filename="$OUTPUT_FILE" \
   --conf="/usr/tsunami/tsunami.yaml" \
-  --scan-results-local-output-json-include-full-plugin-response=true # Optional: for more details
+  --scan-results-local-output-json-include-full-plugin-response=true
 
 echo "Scan finished."
 
-# 2. Upload to GCS using Python
-echo "Uploading results to gs://${GCS_BUCKET}/${EXECUTION_ID}.json..."
+# 2. Upload to GCS using curl Signed URL
+echo "Uploading results using Signed URL..."
+curl -X PUT -H "Content-Type: application/json" -T "$OUTPUT_FILE" "$UPLOAD_URL"
 
-python3 - <<EOF
-from google.cloud import storage
-import os
+# 3. Publish Completion Message to Pub/Sub
+if [ -n "$PUBSUB_TOPIC" ]; then
+  echo "Publishing completion event to Pub/Sub topic: $PUBSUB_TOPIC..."
+  TOKEN=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" -H "Metadata-Flavor: Google" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4 || true)
+  
+  if [ -n "$TOKEN" ]; then
+    PAYLOAD=$(printf '{"messages":[{"data":"%s"}]}' "$(printf '{"execution_id":"%s"}' "$EXECUTION_ID" | base64 | tr -d '\n')")
+    curl -s -X POST "https://pubsub.googleapis.com/v1/$PUBSUB_TOPIC:publish" \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "Content-Type: application/json" \
+      -d "$PAYLOAD" || true
+  fi
+fi
 
-bucket_name = "${GCS_BUCKET}"
-source_file_name = "${OUTPUT_FILE}"
-destination_blob_name = "${EXECUTION_ID}.json"
-
-try:
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(destination_blob_name)
-    blob.upload_from_filename(source_file_name)
-    print(f"Successfully uploaded {source_file_name} to {destination_blob_name}")
-except Exception as e:
-    print(f"Failed to upload results: {e}")
-    exit(1)
-EOF
-
+echo ""
 echo "Job completed successfully."
+
+

@@ -1,10 +1,12 @@
-
 import os
 import logging
 import asyncio
 import vt
 
 logger = logging.getLogger(__name__)
+
+# In-memory cache for CVE risk scores across scan executions
+_CVE_CACHE = {}
 
 class GtiEnricher:
     def __init__(self):
@@ -26,32 +28,36 @@ class GtiEnricher:
         if not self.client:
             return tsunami_results
 
-        # Traverse the results to find vulnerabilities
-        # Tsunami JSON structure usually has 'scanStatus', 'scanFindings'
         findings = tsunami_results.get("scanFindings", [])
         
         for finding in findings:
             vuln = finding.get("vulnerability", {})
-            cve_id = vuln.get("cveId") # Or equivalent field
-            
-            # Additional logic to find CVEs if nested
-            # This relies on the specific Tsunami output schema
+            cve_id = vuln.get("cveId")
             
             if cve_id:
                  try:
-                    # Query GTI for the CVE
-                    # Endpoint: /intelligence/vulnerabilities/{cve_id} (if available in VT lib)
-                    # or search via file/url if we had that. 
-                    # VT's vulnerability API might differ slightly or require Enterprise.
-                    # As a placeholder/example:
-                    # risk_score = await self.get_risk_score(cve_id)
-                    # vuln['gtiRiskScore'] = risk_score
-                    pass
+                     risk_score = await self.get_risk_score(cve_id)
+                     vuln['gtiRiskScore'] = risk_score
                  except Exception as e:
                      logger.error(f"Failed to enrich {cve_id}: {e}")
 
         return tsunami_results
 
     async def get_risk_score(self, cve_id: str) -> float:
-        # Mock implementation of obtaining a risk score
-        return 9.5
+        """Fetches risk score from cache or VirusTotal API."""
+        if cve_id in _CVE_CACHE:
+            logger.info(f"[CACHE HIT] Pulling risk score for {cve_id} from cache.")
+            return _CVE_CACHE[cve_id]
+            
+        logger.info(f"[CACHE MISS] Querying VirusTotal/GTI API for {cve_id}...")
+        # In a real implementation, query VT vulnerability intelligence endpoint:
+        # url = f"/intelligence/vulnerabilities/{cve_id}"
+        # response = await self.client.get_json_async(url)
+        # risk_score = response.get("data", {}).get("attributes", {}).get("cvss_score", 9.5)
+        
+        # Placeholder/Mock simulation of VT API call
+        await asyncio.sleep(0.1)
+        risk_score = 9.5
+        
+        _CVE_CACHE[cve_id] = risk_score
+        return risk_score

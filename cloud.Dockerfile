@@ -30,7 +30,7 @@ RUN python3 -m grpc_tools.protoc \
   /usr/repos/tsunami-security-scanner/proto/*.proto
 
 # Stage 2: Final Cloud Image
-FROM python:3.11-slim
+FROM debian:bookworm-slim
 
 # Install Java and system deps
 RUN apt-get update && apt-get install -y \
@@ -38,9 +38,6 @@ RUN apt-get update && apt-get install -y \
     curl \
     nmap \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Google Cloud Storage lib for the upload script
-RUN pip install google-cloud-storage
 
 WORKDIR /usr/tsunami
 

@@ -21,7 +21,8 @@ resource "google_project_service" "enabled_apis" {
     "cloudbuild.googleapis.com",
     "compute.googleapis.com",
     "storage.googleapis.com",
-    "securitycenter.googleapis.com" # For optional SCC integration
+    "securitycenter.googleapis.com", # For optional SCC integration
+    "pubsub.googleapis.com"
   ])
   service = each.key
   disable_on_destroy = false
@@ -64,10 +65,10 @@ resource "google_storage_bucket_iam_member" "scanner_gcs_write" {
   member = "serviceAccount:${google_service_account.scanner_sa.email}"
 }
 
-# Grant Web UI SA permission to read from GCS
-resource "google_storage_bucket_iam_member" "web_ui_gcs_read" {
+# Grant Web UI SA permission to read/write to GCS (needs write for saving enriched results)
+resource "google_storage_bucket_iam_member" "web_ui_gcs_admin" {
   bucket = google_storage_bucket.scan_results.name
-  role   = "roles/storage.objectViewer"
+  role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${google_service_account.web_ui_sa.email}"
 }
 
@@ -75,6 +76,13 @@ resource "google_storage_bucket_iam_member" "web_ui_gcs_read" {
 resource "google_project_iam_member" "web_ui_run_invoker" {
   project = var.project_id
   role    = "roles/run.developer" # Needs permission to run jobs
+  member  = "serviceAccount:${google_service_account.web_ui_sa.email}"
+}
+
+# Grant Web UI SA permission to create signed URLs
+resource "google_project_iam_member" "web_ui_token_creator" {
+  project = var.project_id
+  role    = "roles/iam.serviceAccountTokenCreator"
   member  = "serviceAccount:${google_service_account.web_ui_sa.email}"
 }
 
@@ -143,6 +151,10 @@ resource "google_cloud_run_service" "web_ui_service" {
           name  = "VT_API_KEY"
           value = var.vt_api_key
         }
+        env {
+          name  = "PUBSUB_TOPIC"
+          value = google_pubsub_topic.scan_completed.name
+        }
       }
     }
   }
@@ -161,4 +173,46 @@ resource "google_cloud_run_service_iam_member" "public_access" {
   location = google_cloud_run_service.web_ui_service.location
   role     = "roles/run.invoker"
   member   = "allUsers"
+}
+
+# Pub/Sub Topic for Scan Completion
+resource "google_pubsub_topic" "scan_completed" {
+  name = "tsunami-scan-completed"
+  depends_on = [google_project_service.enabled_apis]
+}
+
+# Grant Scanner SA permission to publish to Pub/Sub
+resource "google_pubsub_topic_iam_member" "scanner_pubsub_publisher" {
+  topic  = google_pubsub_topic.scan_completed.name
+  role   = "roles/pubsub.publisher"
+  member = "serviceAccount:${google_service_account.scanner_sa.email}"
+}
+
+# Service Account for Pub/Sub Push Subscription
+resource "google_service_account" "pubsub_sa" {
+  account_id   = "tsunami-pubsub-sa"
+  display_name = "Tsunami PubSub Push Service Account"
+}
+
+# Grant PubSub SA permission to invoke Web UI Service
+resource "google_cloud_run_service_iam_member" "pubsub_invoker" {
+  service  = google_cloud_run_service.web_ui_service.name
+  location = google_cloud_run_service.web_ui_service.location
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.pubsub_sa.email}"
+}
+
+# Pub/Sub Push Subscription
+resource "google_pubsub_subscription" "scan_enrichment_sub" {
+  name  = "tsunami-scan-enrichment-sub"
+  topic = google_pubsub_topic.scan_completed.name
+
+  push_config {
+    push_endpoint = "${google_cloud_run_service.web_ui_service.status[0].url}/api/v1/worker/enrich"
+    oidc_token {
+      service_account_email = google_service_account.pubsub_sa.email
+    }
+  }
+
+  depends_on = [google_cloud_run_service.web_ui_service]
 }

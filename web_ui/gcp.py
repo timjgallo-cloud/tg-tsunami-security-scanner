@@ -1,4 +1,3 @@
-
 import os
 import logging
 import uuid
@@ -34,8 +33,6 @@ class CloudPlatform:
         if self.local_mode:
             logger.info(f"[MOCK] Triggering job for target {target} with ID {execution_id}")
             # Simulate a scan duration and result creation in background
-            # For simplicity, we just pre-seed the result now or rely on the read to "wait"
-            # Let's seed a mock result immediately for this test
             mock_result = {
                 "scanStatus": "COMPLETED",
                 "scanFindings": [
@@ -63,6 +60,10 @@ class CloudPlatform:
         if not self.formatted_job_name:
             raise ValueError("Cloud Run configuration missing (PROJECT_ID, REGION, SCANNER_JOB_NAME)")
             
+        # Generate Signed URL for Tsunami to upload results
+        signed_url = await self.generate_signed_url(f"{execution_id}.json")
+        
+        from google.cloud import run_v2
         overrides = run_v2.RunJobRequest.Overrides(
             container_overrides=[
                 run_v2.RunJobRequest.Overrides.ContainerOverride(
@@ -70,6 +71,7 @@ class CloudPlatform:
                         run_v2.EnvVar(name="TARGET", value=target),
                         run_v2.EnvVar(name="EXECUTION_ID", value=execution_id),
                         run_v2.EnvVar(name="GCS_BUCKET", value=self.bucket_name),
+                        run_v2.EnvVar(name="UPLOAD_URL", value=signed_url),
                     ]
                 )
             ]
@@ -84,13 +86,31 @@ class CloudPlatform:
         logger.info(f"Job triggered for target {target}, Execution ID: {execution_id}")
         return execution_id
 
+    async def generate_signed_url(self, filename: str) -> str:
+        """Generates a GCS Signed Upload URL."""
+        if self.local_mode:
+            logger.info(f"[MOCK] Generating signed URL for {filename}")
+            return f"http://127.0.0.1:8080/mock-upload/{filename}"
+            
+        import datetime
+        bucket = self.storage_client.bucket(self.bucket_name)
+        blob = bucket.blob(filename)
+        
+        # Generate Signed URL valid for 2 hours
+        signed_url = blob.generate_signed_url(
+            version="v4",
+            expiration=datetime.timedelta(hours=2),
+            method="PUT",
+            content_type="application/json"
+        )
+        return signed_url
+
     async def read_results(self, filename: str) -> dict:
         """Reads JSON results from GCS."""
         if self.local_mode:
             logger.info(f"[MOCK] Reading {filename} from mock storage.")
             content = _MOCK_STORAGE.get(filename)
             if not content:
-                # Simulate "Not Ready"
                 raise FileNotFoundError(f"Result file {filename} not found (Mock).")
             return json.loads(content)
 
@@ -102,3 +122,14 @@ class CloudPlatform:
             
         content = blob.download_as_text()
         return json.loads(content)
+
+    async def write_results(self, filename: str, data: dict):
+        """Writes JSON results to GCS (used by background enrichment worker)."""
+        if self.local_mode:
+            logger.info(f"[MOCK] Writing {filename} to mock storage.")
+            _MOCK_STORAGE[filename] = json.dumps(data)
+            return
+            
+        bucket = self.storage_client.bucket(self.bucket_name)
+        blob = bucket.blob(filename)
+        blob.upload_from_string(json.dumps(data), content_type="application/json")
