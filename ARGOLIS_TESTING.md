@@ -91,7 +91,7 @@ Run these commands from the repository root to build and push directly to your A
 
 ```bash
 # 1. Build the Scanner Job remotely
-gcloud builds submit --tag us-central1-docker.pkg.dev/<YOUR_ARGOLIS_PROJECT_ID>/tsunami-repo/tsunami-scanner:latest --dockerfile=cloud.Dockerfile .
+gcloud builds submit --config cloudbuild.scanner.yaml .
 
 # 2. Build the Web UI Service remotely
 gcloud builds submit --tag us-central1-docker.pkg.dev/<YOUR_ARGOLIS_PROJECT_ID>/tsunami-repo/tsunami-web-ui:latest ./web_ui
