@@ -35,5 +35,5 @@ import {
 
 import {
   to = google_cloud_run_service.web_ui_service
-  id = "projects/threat-vulnerability-analyzer/locations/us-central1/services/tsunami-web-ui"
+  id = "us-central1/threat-vulnerability-analyzer/tsunami-web-ui"
 }
