@@ -26,3 +26,27 @@ eclipsebin
 # Emacs
 *~
 \#*\#
+
+# Terraform local assets (High Security Risk)
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+*.tfvars.json
+.terraform.lock.hcl
+
+# Python Local Testing & Virtual Environments
+venv/
+.venv/
+__pycache__/
+*.pyc
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Editors & IDE configs
+.vscode/
+
+# Logs & Temporary Data
+*.log
+/tmp/
+

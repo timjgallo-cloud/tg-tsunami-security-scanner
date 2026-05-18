@@ -20,6 +20,9 @@ Please see the documentation on how to
 
 ## GCP Cloud Deployment & Architecture Guide
 
+> [!TIP]
+> **Deploying inside Google Argolis?** Please see our dedicated [GCP Argolis Deployment & Testing Guide](ARGOLIS_TESTING.md) to navigate corporate organization policies, domain-restricted ingress, and VPC internal scan setup.
+
 Deploy the Tsunami Security Scanner with the "Stitch" Web UI to Google Cloud Platform (GCP) using Terraform, Google Cloud Run, and Google Cloud Storage.
 
 ### 🏗️ Architecture Overview
