@@ -27,3 +27,13 @@ import {
   to = google_pubsub_topic.scan_completed
   id = "projects/threat-vulnerability-analyzer/topics/tsunami-scan-completed"
 }
+
+import {
+  to = google_cloud_run_v2_job.tsunami_scanner_job
+  id = "projects/threat-vulnerability-analyzer/locations/us-central1/jobs/tsunami-scanner"
+}
+
+import {
+  to = google_cloud_run_service.web_ui_service
+  id = "projects/threat-vulnerability-analyzer/locations/us-central1/services/tsunami-web-ui"
+}
