@@ -84,10 +84,24 @@ chmod +x setup.sh
 
 ### Step 3: Build & Push Docker Containers
 
-Ensure Docker is configured to authenticate with your Argolis project's Artifact Registry repository:
+You can build and push the containers either **locally using Docker** or **remotely using Google Cloud Build** (highly recommended in Cloud Shell environments as it requires no local Docker setup).
+
+#### Option A: Build Remotely with Google Cloud Build (Recommended)
+Run these commands from the repository root to build and push directly to your Artifact Registry remotely:
 
 ```bash
-# 1. Authenticate Docker
+# 1. Build the Scanner Job remotely
+gcloud builds submit --tag us-central1-docker.pkg.dev/<YOUR_ARGOLIS_PROJECT_ID>/tsunami-repo/tsunami-scanner:latest --dockerfile=cloud.Dockerfile .
+
+# 2. Build the Web UI Service remotely
+gcloud builds submit --tag us-central1-docker.pkg.dev/<YOUR_ARGOLIS_PROJECT_ID>/tsunami-repo/tsunami-web-ui:latest ./web_ui
+```
+
+#### Option B: Build and Push Locally using Docker
+If you have a local Docker daemon running and configured:
+
+```bash
+# 1. Authenticate Docker to Artifact Registry
 gcloud auth configure-docker us-central1-docker.pkg.dev
 
 # 2. Build and Push the Scanner Job
@@ -98,6 +112,7 @@ docker push us-central1-docker.pkg.dev/<YOUR_ARGOLIS_PROJECT_ID>/tsunami-repo/ts
 cd web_ui
 docker build -t us-central1-docker.pkg.dev/<YOUR_ARGOLIS_PROJECT_ID>/tsunami-repo/tsunami-web-ui:latest .
 docker push us-central1-docker.pkg.dev/<YOUR_ARGOLIS_PROJECT_ID>/tsunami-repo/tsunami-web-ui:latest
+cd ..
 ```
 
 ---
