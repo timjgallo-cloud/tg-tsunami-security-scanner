@@ -43,8 +43,7 @@ java -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC \
   com.google.tsunami.main.cli.TsunamiCli \
   "$TARGET_FLAG" \
   --scan-results-local-output-format=JSON \
-  --scan-results-local-output-filename="$OUTPUT_FILE" \
-  --scan-results-local-output-json-include-full-plugin-response=true
+  --scan-results-local-output-filename="$OUTPUT_FILE"
 
 echo "Scan finished."
 
