@@ -29,19 +29,72 @@
 </div>
 
 <div class="card">
-  <h2>Recent Activity</h2>
+  <h2>Active Assessments</h2>
+  {% set active_count = namespace(value=0) %}
+  {% for job in jobs %}
+    {% if job.status == 'Running' %}
+      {% set active_count.value = active_count.value + 1 %}
+    {% endif %}
+  {% endfor %}
+
+  {% if active_count.value > 0 %}
   <table style="width:100%; text-align:left; color: var(--text-secondary); border-collapse: collapse;">
     <thead>
       <tr style="border-bottom: 1px solid var(--border-color);">
         <th style="padding: 10px;">ID</th>
         <th style="padding: 10px;">Target</th>
         <th style="padding: 10px;">Status</th>
-        <th style="padding: 10px;">Risk</th>
+        <th style="padding: 10px;">Start Time</th>
       </tr>
     </thead>
     <tbody>
-      {% if jobs %}
-        {% for job in jobs %}
+      {% for job in jobs %}
+        {% if job.status == 'Running' %}
+        <tr style="border-bottom: 1px solid var(--border-color); cursor: pointer;" onclick="window.location.href='/results/{{ job.id }}'">
+          <td style="padding: 10px;">
+            <a href="/results/{{ job.id }}" style="color: var(--accent-blue); text-decoration: none; font-weight: 500;">
+              {{ job.name }}
+            </a>
+          </td>
+          <td style="padding: 10px; color: var(--text-primary);">{{ job.target }}</td>
+          <td style="padding: 10px;">
+            <span style="color:#8ab4f8; font-weight: 500; animation: pulse 1.5s infinite;">Scanning...</span>
+          </td>
+          <td style="padding: 10px; color: var(--text-secondary);">{{ job.create_time }}</td>
+        </tr>
+        {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
+    No active vulnerability scans in progress.
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Recent History</h2>
+  {% set history_count = namespace(value=0) %}
+  {% for job in jobs %}
+    {% if job.status != 'Running' %}
+      {% set history_count.value = history_count.value + 1 %}
+    {% endif %}
+  {% endfor %}
+
+  {% if history_count.value > 0 %}
+  <table style="width:100%; text-align:left; color: var(--text-secondary); border-collapse: collapse;">
+    <thead>
+      <tr style="border-bottom: 1px solid var(--border-color);">
+        <th style="padding: 10px;">ID</th>
+        <th style="padding: 10px;">Target</th>
+        <th style="padding: 10px;">Status</th>
+        <th style="padding: 10px;">Risk Level</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for job in jobs %}
+        {% if job.status != 'Running' %}
         <tr style="border-bottom: 1px solid var(--border-color); cursor: pointer;" onclick="window.location.href='/results/{{ job.id }}'">
           <td style="padding: 10px;">
             <a href="/results/{{ job.id }}" style="color: var(--accent-blue); text-decoration: none; font-weight: 500;">
@@ -52,8 +105,6 @@
           <td style="padding: 10px;">
             {% if job.status == 'Completed' %}
               <span style="color:#81c995; font-weight: 500;">Completed</span>
-            {% elif job.status == 'Running' %}
-              <span style="color:#8ab4f8; font-weight: 500; animation: pulse 1.5s infinite;">Scanning...</span>
             {% else %}
               <span style="color:#f28b82; font-weight: 500;">Failed</span>
             {% endif %}
@@ -74,15 +125,14 @@
             {% endif %}
           </td>
         </tr>
-        {% endfor %}
-      {% else %}
-        <tr>
-          <td colspan="4" style="padding: 20px; text-align: center; color: var(--text-secondary);">
-            No recent scan activity found.
-          </td>
-        </tr>
-      {% endif %}
+        {% endif %}
+      {% endfor %}
     </tbody>
   </table>
+  {% else %}
+  <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
+    No recent historical scans found.
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

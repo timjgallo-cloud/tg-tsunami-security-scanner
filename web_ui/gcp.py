@@ -56,6 +56,7 @@ class CloudPlatform:
         self.job_name = os.environ.get("SCANNER_JOB_NAME")
         self.bucket_name = os.environ.get("GCS_BUCKET")
         self.service_account_email = os.environ.get("SERVICE_ACCOUNT_EMAIL")
+        self.pubsub_topic = os.environ.get("PUBSUB_TOPIC")
         
         if not self.local_mode:
             import google.auth
@@ -132,15 +133,19 @@ class CloudPlatform:
         signed_url = await self.generate_signed_url(f"{execution_id}.json")
         
         from google.cloud import run_v2
+        env_vars = [
+            run_v2.EnvVar(name="TARGET", value=target),
+            run_v2.EnvVar(name="EXECUTION_ID", value=execution_id),
+            run_v2.EnvVar(name="GCS_BUCKET", value=self.bucket_name),
+            run_v2.EnvVar(name="UPLOAD_URL", value=signed_url),
+        ]
+        if self.pubsub_topic:
+            env_vars.append(run_v2.EnvVar(name="PUBSUB_TOPIC", value=self.pubsub_topic))
+
         overrides = run_v2.RunJobRequest.Overrides(
             container_overrides=[
                 run_v2.RunJobRequest.Overrides.ContainerOverride(
-                    env=[
-                        run_v2.EnvVar(name="TARGET", value=target),
-                        run_v2.EnvVar(name="EXECUTION_ID", value=execution_id),
-                        run_v2.EnvVar(name="GCS_BUCKET", value=self.bucket_name),
-                        run_v2.EnvVar(name="UPLOAD_URL", value=signed_url),
-                    ]
+                    env=env_vars
                 )
             ]
         )
@@ -327,3 +332,17 @@ class CloudPlatform:
         elif "LOW" in ratings:
             return "Low"
         return "Info"
+
+    async def get_scan(self, execution_id: str) -> dict:
+        """Gets details of a specific scan execution by its execution_id."""
+        if self.local_mode:
+            for exe in _MOCK_EXECUTIONS:
+                if exe["id"] == execution_id:
+                    return exe
+            raise FileNotFoundError(f"Scan {execution_id} not found.")
+
+        scans = await self.list_scans()
+        for scan in scans:
+            if scan["id"] == execution_id:
+                return scan
+        raise FileNotFoundError(f"Scan {execution_id} not found.")

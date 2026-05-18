@@ -99,31 +99,75 @@ async def mock_upload(filename: str, request: Request):
 
 @app.get("/results/{execution_id}", response_class=HTMLResponse)
 async def results(request: Request, execution_id: str):
-    """View scan results for a specific execution."""
+    """View scan results or status for a specific execution."""
     try:
-        # First check if pre-enriched results exist
+        # Get scan execution metadata from Cloud Run
+        try:
+            scan_info = await gcp.get_scan(execution_id)
+            status = scan_info.get("status", "Unknown")
+        except Exception as e:
+            logger.warning(f"Could not fetch execution metadata for {execution_id}: {e}")
+            scan_info = {"id": execution_id, "target": "Unknown Target", "status": "Unknown", "create_time": "Just now"}
+            status = "Unknown"
+
+        # Check if results exist in GCS
         enriched_filename = f"{execution_id}_enriched.json"
         raw_filename = f"{execution_id}.json"
         
         try:
             data = await gcp.read_results(enriched_filename)
             enriched = True
+            return templates.TemplateResponse("results.html", {
+                "request": request, 
+                "execution_id": execution_id,
+                "data": data,
+                "enriched": enriched,
+                "active_tab": "dashboard"
+            })
         except FileNotFoundError:
-            # If enriched not found, check if raw exists
-            data = await gcp.read_results(raw_filename)
-            enriched = False
-            
-        return templates.TemplateResponse("results.html", {
-            "request": request, 
-            "execution_id": execution_id,
-            "data": data,
-            "enriched": enriched,
-            "active_tab": "dashboard"
-        })
+            try:
+                data = await gcp.read_results(raw_filename)
+                enriched = False
+                return templates.TemplateResponse("results.html", {
+                    "request": request, 
+                    "execution_id": execution_id,
+                    "data": data,
+                    "enriched": enriched,
+                    "active_tab": "dashboard"
+                })
+            except FileNotFoundError:
+                # Results file does not exist in GCS yet
+                if status == "Running" or status == "Unknown":
+                    # Generate live GCP Console log link for Cloud Run execution
+                    gcp_console_url = None
+                    if not gcp.local_mode and gcp.project_id and scan_info.get("name"):
+                        gcp_console_url = f"https://console.cloud.google.com/run/jobs/executions/details/{gcp.region}/{scan_info['name']}?project={gcp.project_id}"
+                    
+                    return templates.TemplateResponse("scan_progress.html", {
+                        "request": request,
+                        "execution_id": execution_id,
+                        "scan": scan_info,
+                        "gcp_console_url": gcp_console_url,
+                        "active_tab": "dashboard"
+                    })
+                elif status == "Failed":
+                    return templates.TemplateResponse("error.html", {
+                        "request": request,
+                        "message": "The vulnerability assessment job failed to execute. Please check the Cloud Run Console logs.",
+                        "active_tab": "dashboard"
+                    })
+                else:
+                    # Fallback loader template
+                    return templates.TemplateResponse("scan_progress.html", {
+                        "request": request,
+                        "execution_id": execution_id,
+                        "scan": scan_info,
+                        "active_tab": "dashboard"
+                    })
     except Exception as e:
         return templates.TemplateResponse("error.html", {
             "request": request, 
-            "message": f"Results not ready or not found: {e}",
+            "message": str(e),
             "active_tab": "dashboard"
         })
 

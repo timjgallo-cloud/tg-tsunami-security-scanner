@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="text-align: center; padding: 4rem 2rem; max-width: 650px; margin: 2rem auto;">
+  <div class="loading-pulse-container" style="margin-bottom: 2.5rem;">
+    <div class="pulse-ring"></div>
+    <div class="pulse-dot"></div>
+  </div>
+
+  <h1 style="margin-bottom: 0.5rem; font-weight: 500;">Vulnerability Assessment in Progress</h1>
+  <p style="color: var(--text-secondary); margin-bottom: 2.5rem; font-size: 1.05rem;">
+    Tsunami is actively scanning the target system and executing active security probes.
+  </p>
+
+  <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; margin-bottom: 3rem; text-align: left;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+      <span style="color: var(--text-secondary); font-weight: 500;">Target Hostname / IP</span>
+      <span style="color: var(--text-primary); font-family: monospace; font-weight: bold;">{{ scan.target }}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+      <span style="color: var(--text-secondary); font-weight: 500;">Scan Status</span>
+      <span style="color: #8ab4f8; font-weight: bold; animation: pulse 1.5s infinite;">Scanning...</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+      <span style="color: var(--text-secondary); font-weight: 500;">Start Time</span>
+      <span style="color: var(--text-primary);">{{ scan.create_time }}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between;">
+      <span style="color: var(--text-secondary); font-weight: 500;">Execution ID</span>
+      <span style="color: var(--text-primary); font-family: monospace; font-size: 0.9rem;">{{ execution_id }}</span>
+    </div>
+  </div>
+
+  <div style="display: flex; justify-content: center; gap: 1rem;">
+    <a href="/" class="btn btn-secondary" style="padding: 12px 24px; border: 1px solid var(--border-color); border-radius: 4px; color: white; text-decoration: none; font-weight: 500; font-size: 0.95rem; background: transparent; cursor: pointer; transition: all 0.2s ease;">
+      Back to Dashboard
+    </a>
+    {% if gcp_console_url %}
+    <a href="{{ gcp_console_url }}" target="_blank" class="btn btn-primary" style="padding: 12px 24px; background: var(--accent-blue); border-radius: 4px; color: white; text-decoration: none; font-weight: 500; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+      View Live Cloud Run Logs <span style="font-size: 1.1rem;">↗</span>
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  // Auto-reload every 10 seconds to check if results are ready
+  setTimeout(function() {
+    window.location.reload();
+  }, 10000);
+</script>
+{% endblock %}

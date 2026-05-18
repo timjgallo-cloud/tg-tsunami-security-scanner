@@ -160,3 +160,74 @@ button:hover {
     font-weight: bold;
     color: var(--accent-blue);
 }
+
+/* Loading Pulse Animation for Scan Progress Page */
+.loading-pulse-container {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+}
+
+.pulse-ring {
+    border: 4px solid var(--accent-blue);
+    border-radius: 50%;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    animation: pulsate 2s ease-out infinite;
+    opacity: 0;
+    box-sizing: border-box;
+}
+
+.pulse-dot {
+    background-color: var(--accent-blue);
+    border-radius: 50%;
+    height: 30px;
+    width: 30px;
+    position: absolute;
+    left: 25px;
+    top: 25px;
+    box-shadow: 0 0 20px var(--accent-blue);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulsate {
+    0% {
+        transform: scale(0.1, 0.1);
+        opacity: 0.0;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(1.2, 1.2);
+        opacity: 0.0;
+    }
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background-color: var(--accent-blue);
+    color: white !important;
+}
+
+.btn-primary:hover {
+    background-color: var(--accent-blue-hover);
+}
+
+.btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: white !important;
+}
