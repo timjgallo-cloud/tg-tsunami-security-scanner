@@ -33,3 +33,11 @@ dependencies {
     testImplementation "junit:junit:4.13.2"
     testImplementation "org.mockito:mockito-core:5.18.0"
 }
+
+tasks.named("compileJava") {
+    dependsOn(":tsunami-proto:shadowJar")
+}
+
+tasks.named("compileTestJava") {
+    dependsOn(":tsunami-proto:shadowJar")
+}

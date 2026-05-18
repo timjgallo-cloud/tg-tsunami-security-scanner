@@ -1,0 +1,15 @@
+allprojects {
+    configurations.all {
+        resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == 'io.grpc' && details.requested.name == 'protoc-gen-grpc-java') {
+                details.useVersion '1.60.0'
+            }
+            if (details.requested.group == 'com.google.protobuf' && details.requested.name == 'protoc') {
+                details.useVersion '3.25.5'
+            }
+            if (details.requested.group == 'com.google.protobuf' && details.requested.name == 'protobuf-java') {
+                details.useVersion '3.25.5'
+            }
+        }
+    }
+}
