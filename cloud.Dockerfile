@@ -30,11 +30,10 @@ RUN python3 -m grpc_tools.protoc \
   /usr/repos/tsunami-security-scanner/proto/*.proto
 
 # Stage 2: Final Cloud Image
-FROM debian:bookworm-slim
+FROM eclipse-temurin:21-jre-jammy
 
-# Install Java and system deps
+# Install system deps
 RUN apt-get update && apt-get install -y \
-    openjdk-21-jre-headless \
     curl \
     nmap \
     && rm -rf /var/lib/apt/lists/*

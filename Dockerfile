@@ -32,12 +32,18 @@ RUN python3 -m grpc_tools.protoc \
 # Stage 2: Final Cloud Image
 FROM python:3.11-slim
 
-# Install Java and system deps
+# Install system deps
 RUN apt-get update && apt-get install -y \
-    openjdk-21-jre-headless \
     curl \
     nmap \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy JRE 21 from eclipse-temurin image
+COPY --from=eclipse-temurin:21-jre-jammy /opt/java/openjdk /opt/java/openjdk
+
+# Configure Java Environment Variables
+ENV JAVA_HOME=/opt/java/openjdk
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 # Install Google Cloud Storage lib for the upload script
 RUN pip install google-cloud-storage
