@@ -15,3 +15,9 @@ variable "vt_api_key" {
   type        = string
   sensitive   = true
 }
+
+variable "authorized_member" {
+  description = "The IAM member allowed to access the Web UI (e.g., user:your-email@domain.com, domain:altostrat.com)"
+  type        = string
+  default     = "domain:altostrat.com"
+}
