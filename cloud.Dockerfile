@@ -34,7 +34,7 @@ FROM debian:bookworm-slim
 
 # Install Java and system deps
 RUN apt-get update && apt-get install -y \
-    openjdk-21-jre-headless \
+    openjdk-17-jre-headless \
     curl \
     nmap \
     && rm -rf /var/lib/apt/lists/*

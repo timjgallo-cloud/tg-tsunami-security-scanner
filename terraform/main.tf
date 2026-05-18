@@ -22,7 +22,8 @@ resource "google_project_service" "enabled_apis" {
     "compute.googleapis.com",
     "storage.googleapis.com",
     "securitycenter.googleapis.com", # For optional SCC integration
-    "pubsub.googleapis.com"
+    "pubsub.googleapis.com",
+    "cloudresourcemanager.googleapis.com"
   ])
   service = each.key
   disable_on_destroy = false
