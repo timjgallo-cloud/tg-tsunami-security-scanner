@@ -29,6 +29,9 @@ resource "google_project_service" "enabled_apis" {
   disable_on_destroy = false
 }
 
+# Dynamic lookup of Project details
+data "google_project" "project" {}
+
 # Artifact Registry for Container Images
 resource "google_artifact_registry_repository" "tsunami_repo" {
   location      = var.region
@@ -36,6 +39,22 @@ resource "google_artifact_registry_repository" "tsunami_repo" {
   description   = "Docker repository for Tsunami Scanner and Web UI"
   format        = "DOCKER"
   depends_on    = [google_project_service.enabled_apis]
+}
+
+# Grant Cloud Build SA writer permissions to Artifact Registry
+resource "google_artifact_registry_repository_iam_member" "cloud_build_ar_writer" {
+  location   = google_artifact_registry_repository.tsunami_repo.location
+  repository = google_artifact_registry_repository.tsunami_repo.name
+  role       = "roles/artifactregistry.writer"
+  member     = "serviceAccount:${data.google_project.project.number}@cloudbuild.gserviceaccount.com"
+}
+
+# Grant Compute Engine SA writer permissions to Artifact Registry
+resource "google_artifact_registry_repository_iam_member" "compute_sa_ar_writer" {
+  location   = google_artifact_registry_repository.tsunami_repo.location
+  repository = google_artifact_registry_repository.tsunami_repo.name
+  role       = "roles/artifactregistry.writer"
+  member     = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
 }
 
 # GCS Bucket for Scan Results
