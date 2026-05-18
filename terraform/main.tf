@@ -91,6 +91,7 @@ resource "google_project_iam_member" "web_ui_token_creator" {
 resource "google_cloud_run_v2_job" "tsunami_scanner_job" {
   name     = "tsunami-scanner"
   location = var.region
+  deletion_protection = false
 
   template {
     template {
