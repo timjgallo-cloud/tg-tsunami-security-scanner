@@ -1,11 +1,19 @@
 steps:
+# 1. Pull the existing image from Artifact Registry to act as a cache source
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    docker pull us-central1-docker.pkg.dev/$PROJECT_ID/tsunami-repo/tsunami-scanner:latest || true
+
+# 2. Build the container leveraging cache from the existing image layers
 - name: 'gcr.io/cloud-builders/docker'
   args: [
     'build',
-    '-t',
-    'us-central1-docker.pkg.dev/$PROJECT_ID/tsunami-repo/tsunami-scanner:latest',
-    '-f',
-    'cloud.Dockerfile',
+    '--cache-from', 'us-central1-docker.pkg.dev/$PROJECT_ID/tsunami-repo/tsunami-scanner:latest',
+    '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/tsunami-repo/tsunami-scanner:latest',
+    '-f', 'cloud.Dockerfile',
     '.'
   ]
 images:

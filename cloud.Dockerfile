@@ -3,7 +3,16 @@
 FROM ghcr.io/google/tsunami-scanner-devel:latest AS build
 
 WORKDIR /usr/repos/tsunami-security-scanner
-COPY . .
+# Copy only source and build configuration files to leverage Docker layer caching
+COPY gradlew settings.gradle settings.gradle build.gradle init.gradle ./
+COPY gradle/ ./gradle/
+COPY proto/ ./proto/
+COPY common/ ./common/
+COPY plugin/ ./plugin/
+COPY plugin_server/ ./plugin_server/
+COPY workflow/ ./workflow/
+COPY main/ ./main/
+COPY tsunami.yaml ./
 RUN mkdir -p /usr/tsunami
 # Build fat jar
 RUN gradle shadowJar
