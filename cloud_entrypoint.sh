@@ -39,12 +39,11 @@ echo "Execution ID: $EXECUTION_ID"
 # 1. Run Tsunami Scanner with JVM Container Memory Tuning
 java -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC \
   -cp "/usr/tsunami/tsunami.jar:/usr/tsunami/py_server" \
-  -Dtsunami-config.location=/usr/tsunami/tsunami.yaml \
+  -Dtsunami.config.location=/usr/tsunami/tsunami.yaml \
   com.google.tsunami.main.cli.TsunamiCli \
   "$TARGET_FLAG" \
   --scan-results-local-output-format=JSON \
   --scan-results-local-output-filename="$OUTPUT_FILE" \
-  --conf="/usr/tsunami/tsunami.yaml" \
   --scan-results-local-output-json-include-full-plugin-response=true
 
 echo "Scan finished."
