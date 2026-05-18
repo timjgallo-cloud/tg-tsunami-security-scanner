@@ -19,11 +19,27 @@ class CloudPlatform:
         self.service_account_email = os.environ.get("SERVICE_ACCOUNT_EMAIL")
         
         if not self.local_mode:
+            import google.auth
+            from google.auth import impersonated_credentials
             from google.cloud import run_v2
             from google.cloud import storage
+            
             self.run_client = run_v2.JobsClient()
             self.formatted_job_name = f"projects/{self.project_id}/locations/{self.region}/jobs/{self.job_name}" if self.project_id and self.job_name else None
-            self.storage_client = storage.Client()
+            
+            # Initialize GCS client with impersonated credentials to support keyless signing
+            base_credentials, project = google.auth.default()
+            if self.service_account_email:
+                logger.info(f"Impersonating Web UI Service Account: {self.service_account_email} for keyless GCS URL signing")
+                self.storage_credentials = impersonated_credentials.Credentials(
+                    source_credentials=base_credentials,
+                    target_principal=self.service_account_email,
+                    target_scopes=["https://www.googleapis.com/auth/devstorage.read_write"],
+                    lifetime=3600
+                )
+                self.storage_client = storage.Client(credentials=self.storage_credentials, project=self.project_id)
+            else:
+                self.storage_client = storage.Client()
         else:
             logger.info("Running in LOCAL_MODE. Using mock GCP services.")
 
