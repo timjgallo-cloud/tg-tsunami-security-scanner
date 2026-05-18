@@ -34,7 +34,7 @@ FROM python:3.11-slim
 
 # Install Java and system deps
 RUN apt-get update && apt-get install -y \
-    openjdk-17-jre-headless \
+    openjdk-21-jre-headless \
     curl \
     nmap \
     && rm -rf /var/lib/apt/lists/*
