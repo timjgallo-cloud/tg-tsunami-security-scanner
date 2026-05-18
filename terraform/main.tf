@@ -174,7 +174,7 @@ resource "google_cloud_run_service_iam_member" "public_access" {
   service  = google_cloud_run_service.web_ui_service.name
   location = google_cloud_run_service.web_ui_service.location
   role     = "roles/run.invoker"
-  member   = "allUsers"
+  member   = "domain:google.com"
 }
 
 # Pub/Sub Topic for Scan Completion
