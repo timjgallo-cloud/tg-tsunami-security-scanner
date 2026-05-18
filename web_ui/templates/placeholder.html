@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; text-align: center; margin: 40px auto; padding: 3rem 2rem;">
+  <div style="font-size: 4rem; color: var(--accent-blue); margin-bottom: 1.5rem; animation: pulse 2s infinite;">✦</div>
+  <h1 style="margin-bottom: 1rem;">{{ title }}</h1>
+  <p style="color: var(--text-secondary); line-height: 1.6; font-size: 1.1rem; margin-bottom: 2rem;">
+    {{ description }}
+  </p>
+  
+  <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 1.5rem; margin-bottom: 2rem; text-align: left;">
+    <span style="text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.1em; color: var(--accent-blue); font-weight: bold; display: block; margin-bottom: 0.5rem;">Enterprise Feature</span>
+    <span style="color: var(--text-primary); font-weight: 500; font-size: 1.1rem;">Coming Soon to Stitch Web UI</span>
+    <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0.5rem 0 0 0; line-height: 1.5;">
+      We are actively working on this capability. It will be fully integrated with Tsunami engine callbacks, asset group maps, and GTI threat profiling in an upcoming release.
+    </p>
+  </div>
+
+  <button onclick="window.location.href='/'" style="padding: 10px 20px;">Return to Dashboard</button>
+</div>
+{% endblock %}

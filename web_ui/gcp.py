@@ -7,7 +7,46 @@ import asyncio
 logger = logging.getLogger(__name__)
 
 # Temporary mock data storage for local testing
-_MOCK_STORAGE = {}
+_MOCK_EXECUTIONS = [
+    {
+        "id": "mock-execution-1024",
+        "name": "tsunami-scanner-a1b2c",
+        "target": "192.168.1.1",
+        "status": "Completed",
+        "status_class": "status-completed",
+        "create_time": "2026-05-18 12:00:00 UTC",
+        "risk": "High"
+    },
+    {
+        "id": "mock-execution-1025",
+        "name": "tsunami-scanner-d3e4f",
+        "target": "10.128.0.5",
+        "status": "Completed",
+        "status_class": "status-completed",
+        "create_time": "2026-05-18 14:30:00 UTC",
+        "risk": "None"
+    }
+]
+
+_MOCK_STORAGE = {
+    "mock-execution-1024.json": json.dumps({
+        "scanStatus": "COMPLETED",
+        "scanFindings": [
+            {
+                "vulnerability": {
+                     "cveId": "CVE-2023-1234",
+                     "title": "Mock Vulnerability in Test",
+                     "description": "This is a simulated vulnerability found in local mode.",
+                     "rating": "HIGH"
+                }
+            }
+        ]
+    }),
+    "mock-execution-1025.json": json.dumps({
+        "scanStatus": "COMPLETED",
+        "scanFindings": []
+    })
+}
 
 class CloudPlatform:
     def __init__(self):
@@ -25,6 +64,7 @@ class CloudPlatform:
             from google.cloud import storage
             
             self.run_client = run_v2.JobsClient()
+            self.execution_client = run_v2.ExecutionsClient()
             self.formatted_job_name = f"projects/{self.project_id}/locations/{self.region}/jobs/{self.job_name}" if self.project_id and self.job_name else None
             
             # Initialize GCS client with impersonated credentials to support keyless signing
@@ -72,6 +112,17 @@ class CloudPlatform:
                 ]
             }
             _MOCK_STORAGE[f"{execution_id}.json"] = json.dumps(mock_result)
+            
+            # Append to mock executions list for Recent Activity
+            _MOCK_EXECUTIONS.insert(0, {
+                "id": execution_id,
+                "name": f"tsunami-scanner-{execution_id[:8]}",
+                "target": target,
+                "status": "Completed",
+                "status_class": "status-completed",
+                "create_time": "Just now",
+                "risk": "High"
+            })
             return execution_id
 
         if not self.formatted_job_name:
@@ -151,3 +202,128 @@ class CloudPlatform:
         bucket = self.storage_client.bucket(self.bucket_name)
         blob = bucket.blob(filename)
         blob.upload_from_string(json.dumps(data), content_type="application/json")
+
+    async def list_scans(self) -> list:
+        """Lists the recent scan executions."""
+        if self.local_mode:
+            logger.info("[MOCK] Listing executions.")
+            return _MOCK_EXECUTIONS
+
+        if not self.formatted_job_name:
+            return []
+
+        from google.cloud import run_v2
+        
+        try:
+            # Call blocking list_executions in executor to avoid blocking event loop
+            loop = asyncio.get_running_loop()
+            def fetch():
+                request = run_v2.ListExecutionsRequest(parent=self.formatted_job_name)
+                return list(self.execution_client.list_executions(request=request))
+            
+            executions = await loop.run_in_executor(None, fetch)
+        except Exception as e:
+            logger.error(f"Failed to list Cloud Run executions: {e}")
+            return []
+
+        jobs = []
+        for exe in executions:
+            # Get execution ID (the last part of execution name)
+            exe_name = exe.name.split("/")[-1]
+            
+            # Extract target and execution_id from container env overrides
+            target = "Unknown"
+            execution_id = None
+            
+            try:
+                if exe.template and exe.template.containers:
+                    for env_var in exe.template.containers[0].env:
+                        if env_var.name == "TARGET":
+                            target = env_var.value
+                        elif env_var.name == "EXECUTION_ID":
+                            execution_id = env_var.value
+            except Exception as e:
+                logger.warning(f"Failed to parse container env for execution {exe_name}: {e}")
+
+            # If no execution_id in env, default to the execution name suffix
+            if not execution_id:
+                execution_id = exe_name
+
+            # Determine status
+            status = "Running"
+            status_class = "status-running"
+            
+            if exe.completion_time:
+                if exe.failed_count > 0:
+                    status = "Failed"
+                    status_class = "status-failed"
+                else:
+                    status = "Completed"
+                    status_class = "status-completed"
+
+            # Determine risk/vulnerabilities by checking GCS results file
+            risk = "Pending"
+            if status == "Completed":
+                risk = "None"
+                # Check if enriched or raw result exists in GCS
+                try:
+                    enriched_filename = f"{execution_id}_enriched.json"
+                    raw_filename = f"{execution_id}.json"
+                    
+                    bucket = self.storage_client.bucket(self.bucket_name)
+                    blob = bucket.blob(enriched_filename)
+                    if blob.exists():
+                        try:
+                            content = blob.download_as_text()
+                            data = json.loads(content)
+                            risk = self._determine_risk_level(data)
+                        except Exception:
+                            risk = "Error"
+                    else:
+                        blob_raw = bucket.blob(raw_filename)
+                        if blob_raw.exists():
+                            try:
+                                content = blob_raw.download_as_text()
+                                data = json.loads(content)
+                                risk = self._determine_risk_level(data)
+                            except Exception:
+                                risk = "Error"
+                except Exception as e:
+                    logger.warning(f"Failed to check GCS results for risk level of {execution_id}: {e}")
+                    risk = "Unknown"
+            elif status == "Failed":
+                risk = "N/A"
+
+            # Format create time
+            create_time_str = ""
+            if exe.create_time:
+                create_time_str = exe.create_time.strftime("%Y-%m-%d %H:%M:%S UTC")
+
+            jobs.append({
+                "id": execution_id,
+                "name": exe_name,
+                "target": target,
+                "status": status,
+                "status_class": status_class,
+                "create_time": create_time_str,
+                "risk": risk
+            })
+            
+        return jobs
+
+    def _determine_risk_level(self, data: dict) -> str:
+        """Determines the risk level based on the scan results data."""
+        findings = data.get("scanFindings", [])
+        if not findings:
+            return "None"
+            
+        ratings = [f.get("vulnerability", {}).get("rating", "UNKNOWN").upper() for f in findings]
+        if "CRITICAL" in ratings:
+            return "Critical"
+        elif "HIGH" in ratings:
+            return "High"
+        elif "MEDIUM" in ratings:
+            return "Medium"
+        elif "LOW" in ratings:
+            return "Low"
+        return "Info"

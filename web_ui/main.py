@@ -20,7 +20,16 @@ logger = logging.getLogger(__name__)
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     """Render the home page."""
-    return templates.TemplateResponse("index.html", {"request": request, "jobs": []})
+    try:
+        jobs = await gcp.list_scans()
+    except Exception as e:
+        logger.error(f"Failed to list scans: {e}")
+        jobs = []
+    return templates.TemplateResponse("index.html", {
+        "request": request, 
+        "jobs": jobs,
+        "active_tab": "dashboard"
+    })
 
 @app.post("/scan")
 async def scan(request: Request, target: str = Form(...)):
@@ -30,13 +39,15 @@ async def scan(request: Request, target: str = Form(...)):
         return templates.TemplateResponse("success.html", {
             "request": request, 
             "target": target, 
-            "execution_id": execution_id
+            "execution_id": execution_id,
+            "active_tab": "dashboard"
         })
     except Exception as e:
         logger.error(f"Failed to start scan: {e}")
         return templates.TemplateResponse("error.html", {
             "request": request, 
-            "message": str(e)
+            "message": str(e),
+            "active_tab": "dashboard"
         })
 
 @app.post("/worker/enrich")
@@ -106,13 +117,45 @@ async def results(request: Request, execution_id: str):
             "request": request, 
             "execution_id": execution_id,
             "data": data,
-            "enriched": enriched
+            "enriched": enriched,
+            "active_tab": "dashboard"
         })
     except Exception as e:
         return templates.TemplateResponse("error.html", {
             "request": request, 
-            "message": f"Results not ready or not found: {e}"
+            "message": f"Results not ready or not found: {e}",
+            "active_tab": "dashboard"
         })
+
+@app.get("/projects", response_class=HTMLResponse)
+async def projects(request: Request):
+    """Render the Projects placeholder page."""
+    return templates.TemplateResponse("placeholder.html", {
+        "request": request,
+        "active_tab": "projects",
+        "title": "Projects",
+        "description": "Organize your targets and scanning campaigns into distinct, isolated environments for better team collaboration."
+    })
+
+@app.get("/collections", response_class=HTMLResponse)
+async def collections(request: Request):
+    """Render the Collections placeholder page."""
+    return templates.TemplateResponse("placeholder.html", {
+        "request": request,
+        "active_tab": "collections",
+        "title": "Collections",
+        "description": "Group endpoints, API definitions, and subnets into reusable host lists for batch Tsunami scanning."
+    })
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings(request: Request):
+    """Render the Settings placeholder page."""
+    return templates.TemplateResponse("placeholder.html", {
+        "request": request,
+        "active_tab": "settings",
+        "title": "Settings",
+        "description": "Manage engine keys, API rate limiting policies, custom plugin weights, and notification webhooks."
+    })
 
 @app.get("/health")
 async def health():

@@ -111,6 +111,12 @@ button:hover {
     background-color: var(--accent-blue-hover);
 }
 
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
 /* Alerts & Logs */
 .alert {
     padding: 15px;

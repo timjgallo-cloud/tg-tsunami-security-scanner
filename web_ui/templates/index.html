@@ -40,12 +40,48 @@
       </tr>
     </thead>
     <tbody>
-      <tr>
-        <td style="padding: 10px;">#1024</td>
-        <td style="padding: 10px;">192.168.1.1</td>
-        <td style="padding: 10px;"><span style="color:#81c995">Completed</span></td>
-        <td style="padding: 10px;"><span style="color:var(--text-secondary)">None</span></td>
-      </tr>
+      {% if jobs %}
+        {% for job in jobs %}
+        <tr style="border-bottom: 1px solid var(--border-color); cursor: pointer;" onclick="window.location.href='/results/{{ job.id }}'">
+          <td style="padding: 10px;">
+            <a href="/results/{{ job.id }}" style="color: var(--accent-blue); text-decoration: none; font-weight: 500;">
+              {{ job.name }}
+            </a>
+          </td>
+          <td style="padding: 10px; color: var(--text-primary);">{{ job.target }}</td>
+          <td style="padding: 10px;">
+            {% if job.status == 'Completed' %}
+              <span style="color:#81c995; font-weight: 500;">Completed</span>
+            {% elif job.status == 'Running' %}
+              <span style="color:#8ab4f8; font-weight: 500; animation: pulse 1.5s infinite;">Scanning...</span>
+            {% else %}
+              <span style="color:#f28b82; font-weight: 500;">Failed</span>
+            {% endif %}
+          </td>
+          <td style="padding: 10px;">
+            {% if job.risk == 'Critical' %}
+              <span style="color:#f28b82; font-weight:bold;">Critical</span>
+            {% elif job.risk == 'High' %}
+              <span style="color:#fdd663; font-weight:bold;">High</span>
+            {% elif job.risk == 'Medium' %}
+              <span style="color:#8ab4f8; font-weight:500;">Medium</span>
+            {% elif job.risk == 'Low' %}
+              <span style="color:#b0b3b8;">Low</span>
+            {% elif job.risk == 'None' %}
+              <span style="color:#81c995; font-weight:500;">None</span>
+            {% else %}
+              <span style="color:var(--text-secondary)">{{ job.risk }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="4" style="padding: 20px; text-align: center; color: var(--text-secondary);">
+            No recent scan activity found.
+          </td>
+        </tr>
+      {% endif %}
     </tbody>
   </table>
 </div>

@@ -13,10 +13,10 @@
   <div class="sidebar">
     <h2>Stitch</h2>
     <nav class="sidebar-nav">
-      <a href="/" class="active">Scanner Dashboard</a>
-      <a href="#">Projects</a>
-      <a href="#">Collections</a>
-      <a href="#">Settings</a>
+      <a href="/" class="{% if active_tab == 'dashboard' %}active{% endif %}">Scanner Dashboard</a>
+      <a href="/projects" class="{% if active_tab == 'projects' %}active{% endif %}">Projects</a>
+      <a href="/collections" class="{% if active_tab == 'collections' %}active{% endif %}">Collections</a>
+      <a href="/settings" class="{% if active_tab == 'settings' %}active{% endif %}">Settings</a>
     </nav>
     <div style="flex:1"></div>
     <div style="color: var(--text-secondary); font-size: 0.8rem;">
