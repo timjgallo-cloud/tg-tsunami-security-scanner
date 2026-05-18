@@ -22,7 +22,18 @@ fi
 EXECUTION_ID=${EXECUTION_ID:-$(date +%s)}
 OUTPUT_FILE="/tmp/${EXECUTION_ID}.json"
 
-echo "Starting Tsunami scan for target: $TARGET"
+# Detect target type dynamically
+if [[ "$TARGET" =~ ^https?:// ]]; then
+  TARGET_FLAG="--uri-target=$TARGET"
+elif [[ "$TARGET" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  TARGET_FLAG="--ip-v4-target=$TARGET"
+elif [[ "$TARGET" == *:* ]]; then
+  TARGET_FLAG="--ip-v6-target=$TARGET"
+else
+  TARGET_FLAG="--hostname-target=$TARGET"
+fi
+
+echo "Starting Tsunami scan using flag: $TARGET_FLAG"
 echo "Execution ID: $EXECUTION_ID"
 
 # 1. Run Tsunami Scanner with JVM Container Memory Tuning
@@ -30,7 +41,7 @@ java -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC \
   -cp "/usr/tsunami/tsunami.jar:/usr/tsunami/py_server" \
   -Dtsunami-config.location=/usr/tsunami/tsunami.yaml \
   com.google.tsunami.main.cli.TsunamiCli \
-  --ip-v4-target="$TARGET" \
+  "$TARGET_FLAG" \
   --scan-results-local-output-format=JSON \
   --scan-results-local-output-filename="$OUTPUT_FILE" \
   --conf="/usr/tsunami/tsunami.yaml" \
