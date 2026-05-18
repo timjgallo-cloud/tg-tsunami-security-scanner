@@ -16,6 +16,7 @@ class CloudPlatform:
         self.region = os.environ.get("REGION", "us-central1")
         self.job_name = os.environ.get("SCANNER_JOB_NAME")
         self.bucket_name = os.environ.get("GCS_BUCKET")
+        self.service_account_email = os.environ.get("SERVICE_ACCOUNT_EMAIL")
         
         if not self.local_mode:
             from google.cloud import run_v2
@@ -96,12 +97,13 @@ class CloudPlatform:
         bucket = self.storage_client.bucket(self.bucket_name)
         blob = bucket.blob(filename)
         
-        # Generate Signed URL valid for 2 hours
+        # Generate Signed URL valid for 2 hours using IAM Credentials API (Sign Blob)
         signed_url = blob.generate_signed_url(
             version="v4",
             expiration=datetime.timedelta(hours=2),
             method="PUT",
-            content_type="application/json"
+            content_type="application/json",
+            service_account_email=self.service_account_email
         )
         return signed_url
 

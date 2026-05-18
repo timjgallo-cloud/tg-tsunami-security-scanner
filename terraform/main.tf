@@ -157,6 +157,10 @@ resource "google_cloud_run_service" "web_ui_service" {
           name  = "PUBSUB_TOPIC"
           value = google_pubsub_topic.scan_completed.name
         }
+        env {
+          name  = "SERVICE_ACCOUNT_EMAIL"
+          value = google_service_account.web_ui_sa.email
+        }
       }
     }
   }
