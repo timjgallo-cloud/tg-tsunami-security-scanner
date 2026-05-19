@@ -38,7 +38,7 @@ echo "Execution ID: $EXECUTION_ID"
 
 # 1. Run Tsunami Scanner with JVM Container Memory Tuning
 java -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC \
-  -cp "/usr/tsunami/tsunami.jar:/usr/tsunami/py_server" \
+  -cp "/usr/tsunami/tsunami.jar:/usr/tsunami/plugins/*:/usr/tsunami/py_server" \
   -Dtsunami.config.location=/usr/tsunami/tsunami.yaml \
   com.google.tsunami.main.cli.TsunamiCli \
   "$TARGET_FLAG" \

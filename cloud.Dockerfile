@@ -38,6 +38,14 @@ RUN python3 -m grpc_tools.protoc \
   --grpc_python_out=/usr/tsunami/py_server/ \
   /usr/repos/tsunami-security-scanner/proto/*.proto
 
+# Pull standard Tsunami plugins
+FROM ghcr.io/google/tsunami-plugins-google:latest AS plugins-google
+FROM ghcr.io/google/tsunami-plugins-templated:latest AS plugins-templated
+FROM ghcr.io/google/tsunami-plugins-doyensec:latest AS plugins-doyensec
+FROM ghcr.io/google/tsunami-plugins-community:latest AS plugins-community
+FROM ghcr.io/google/tsunami-plugins-govtech:latest AS plugins-govtech
+FROM ghcr.io/google/tsunami-plugins-facebook:latest AS plugins-facebook
+
 # Stage 2: Final Cloud Image
 FROM eclipse-temurin:21-jre-jammy
 
@@ -54,6 +62,14 @@ COPY --from=build /usr/tsunami/tsunami.jar .
 COPY --from=build /usr/tsunami/tsunami.yaml .
 COPY --from=build /usr/tsunami/payload_definitions.yaml .
 COPY --from=build /usr/tsunami/py_server/ ./py_server/
+
+# Copy standard Tsunami plugins
+COPY --from=plugins-google /usr/tsunami/plugins/ /usr/tsunami/plugins/
+COPY --from=plugins-templated /usr/tsunami/plugins/ /usr/tsunami/plugins/
+COPY --from=plugins-doyensec /usr/tsunami/plugins/ /usr/tsunami/plugins/
+COPY --from=plugins-community /usr/tsunami/plugins/ /usr/tsunami/plugins/
+COPY --from=plugins-govtech /usr/tsunami/plugins/ /usr/tsunami/plugins/
+COPY --from=plugins-facebook /usr/tsunami/plugins/ /usr/tsunami/plugins/
 
 # Copy entrypoint
 COPY cloud_entrypoint.sh /usr/tsunami/cloud_entrypoint.sh
