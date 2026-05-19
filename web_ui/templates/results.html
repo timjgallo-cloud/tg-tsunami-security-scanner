@@ -18,9 +18,85 @@
 </div>
 {% endif %}
 
-<div class="card">
-  <h2>Detailed Findings</h2>
-  <!-- This is where we would iterate over 'data' to show nice rows -->
-  <pre style="max-height: 500px; overflow: auto; background:#111; color:#eee;">{{ data | tojson(indent=2) }}</pre>
+<div style="max-width: 900px; margin-bottom: 3rem;">
+  <h2>Scan Findings by Asset</h2>
+  
+  {% if grouped_findings %}
+    {% for asset, findings in grouped_findings.items() %}
+      <div class="asset-section" style="margin-bottom: 2rem; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+        <div class="asset-header" style="background: var(--bg-secondary); padding: 1.2rem 1.5rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color);">
+          <h3 style="margin: 0; font-size: 1.2rem; color: var(--accent-blue); display: flex; align-items: center; gap: 0.5rem;">
+            🖥️ Asset: <span style="color: var(--text-primary); font-family: monospace; font-weight: normal;">{{ asset }}</span>
+          </h3>
+          <span style="background: rgba(27, 110, 243, 0.15); color: #8ab4f8; padding: 0.3rem 0.8rem; border-radius: 50px; font-size: 0.8rem; font-weight: bold; letter-spacing: 0.5px; border: 1px solid rgba(27, 110, 243, 0.3);">
+            {{ findings|length }} Finding(s)
+          </span>
+        </div>
+        
+        <div class="findings-container" style="padding: 1.5rem; background: rgba(255, 255, 255, 0.01); display: flex; flex-direction: column; gap: 1.2rem;">
+          {% for finding in findings %}
+            {% set vuln = finding.vulnerability %}
+            <div class="finding-card" style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 1.5rem; border-radius: 8px; transition: border-color 0.2s ease-in-out; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+              <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem;">
+                <div style="flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
+                    <span class="severity-badge severity-{{ vuln.rating|lower }}" style="padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold; letter-spacing: 0.5px;">
+                      {{ vuln.rating or 'INFO' }}
+                    </span>
+                    <h4 style="margin: 0; font-size: 1.15rem; font-weight: 600; color: var(--text-primary);">{{ vuln.title or 'Unnamed Finding' }}</h4>
+                  </div>
+                  
+                  {% if vuln.cveId %}
+                    <div style="margin-top: 0.6rem; display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem;">
+                      <span style="color: var(--text-secondary);">Google Threat Intelligence:</span>
+                      <a href="https://www.virustotal.com/gui/vulnerability/{{ vuln.cveId }}" target="_blank" style="font-family: monospace; color: #8ab4f8; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem; border-bottom: 1px dashed rgba(138, 180, 248, 0.4); padding-bottom: 1px;">
+                        {{ vuln.cveId }} ↗️
+                      </a>
+                    </div>
+                  {% endif %}
+                </div>
+                
+                {% if vuln.gtiRiskScore is defined and vuln.gtiRiskScore is not none %}
+                  <div style="text-align: right; min-width: 105px; background: rgba(255,255,255,0.02); padding: 0.5rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">GTI Risk Score</div>
+                    <div style="font-size: 1.6rem; font-weight: 800; color: #81c995; font-family: monospace; line-height: 1.1;">{{ vuln.gtiRiskScore }}</div>
+                  </div>
+                {% endif %}
+              </div>
+              
+              <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; margin: 0 0 1.2rem 0;">
+                {{ vuln.description or 'No description provided by plugin.' }}
+              </p>
+              
+              {% if finding.networkService %}
+                <div style="font-size: 0.8rem; color: var(--text-secondary); background: rgba(0, 0, 0, 0.25); padding: 0.7rem 1.2rem; border-radius: 6px; display: flex; gap: 2rem; flex-wrap: wrap; border: 1px solid rgba(255,255,255,0.02);">
+                  {% if finding.networkService.networkEndpoint and finding.networkService.networkEndpoint.port %}
+                    <span><strong>Port:</strong> <span style="font-family: monospace; color: var(--text-primary);">{{ finding.networkService.networkEndpoint.port.portNumber }}</span> ({{ finding.networkService.transportProtocol or 'TCP' }})</span>
+                  {% endif %}
+                  {% if finding.networkService.serviceName %}
+                    <span><strong>Service:</strong> <span style="font-family: monospace; color: var(--text-primary);">{{ finding.networkService.serviceName }}</span></span>
+                  {% endif %}
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="card" style="text-align: center; padding: 3rem; max-width: 100%;">
+      <p style="font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 0.5rem;">No vulnerabilities identified on assets.</p>
+      <p style="font-size: 0.9rem; color: rgba(255,255,255,0.3);">Your infrastructure appears secure against active Tsunami scanner plugins.</p>
+    </div>
+  {% endif %}
+</div>
+
+<div style="max-width: 900px; margin-bottom: 2rem;">
+  <details style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; cursor: pointer;">
+    <summary style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 500; outline: none; user-select: none;">
+      📂 View Raw JSON Scan Output
+    </summary>
+    <pre style="margin-top: 1rem; max-height: 400px; overflow: auto; background: #111; color: #eee; padding: 1rem; border-radius: 6px; font-size: 0.85rem; cursor: text;">{{ data | tojson(indent=2) }}</pre>
+  </details>
 </div>
 {% endblock %}

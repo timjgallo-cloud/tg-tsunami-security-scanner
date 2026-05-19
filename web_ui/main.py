@@ -14,6 +14,42 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 gcp = CloudPlatform()
 
+def group_findings_by_asset(data: dict, default_target: str) -> dict:
+    """Groups Tsunami scan findings by their associated asset (IP or domain)."""
+    findings = data.get("scanFindings", [])
+    if not findings:
+        return {}
+        
+    grouped = {}
+    for finding in findings:
+        asset = None
+        target_info = finding.get("targetInfo", {})
+        endpoints = target_info.get("networkEndpoints", [])
+        if endpoints:
+            ep = endpoints[0]
+            if "ipAddress" in ep and "address" in ep["ipAddress"]:
+                asset = ep["ipAddress"]["address"]
+            elif "hostname" in ep and "name" in ep["hostname"]:
+                asset = ep["hostname"]["name"]
+                
+        if not asset:
+            net_service = finding.get("networkService", {})
+            ep = net_service.get("networkEndpoint", {})
+            if "ipAddress" in ep and "address" in ep["ipAddress"]:
+                asset = ep["ipAddress"]["address"]
+            elif "hostname" in ep and "name" in ep["hostname"]:
+                asset = ep["hostname"]["name"]
+                
+        if not asset:
+            asset = default_target
+            
+        if asset not in grouped:
+            grouped[asset] = []
+        grouped[asset].append(finding)
+        
+    return grouped
+
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -114,13 +150,16 @@ async def results(request: Request, execution_id: str):
         enriched_filename = f"{execution_id}_enriched.json"
         raw_filename = f"{execution_id}.json"
         
+        target_fallback = scan_info.get("target", "Unknown Target")
         try:
             data = await gcp.read_results(enriched_filename)
             enriched = True
+            grouped_findings = group_findings_by_asset(data, target_fallback)
             return templates.TemplateResponse("results.html", {
                 "request": request, 
                 "execution_id": execution_id,
                 "data": data,
+                "grouped_findings": grouped_findings,
                 "enriched": enriched,
                 "active_tab": "dashboard"
             })
@@ -128,10 +167,12 @@ async def results(request: Request, execution_id: str):
             try:
                 data = await gcp.read_results(raw_filename)
                 enriched = False
+                grouped_findings = group_findings_by_asset(data, target_fallback)
                 return templates.TemplateResponse("results.html", {
                     "request": request, 
                     "execution_id": execution_id,
                     "data": data,
+                    "grouped_findings": grouped_findings,
                     "enriched": enriched,
                     "active_tab": "dashboard"
                 })

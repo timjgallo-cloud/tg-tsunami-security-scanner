@@ -231,3 +231,26 @@ button:hover {
     background-color: rgba(255, 255, 255, 0.05);
     border-color: white !important;
 }
+
+.severity-badge {
+    border: 1px solid transparent;
+}
+
+.severity-critical, .severity-high {
+    background-color: rgba(197, 34, 31, 0.15) !important;
+    border-color: #f28b82 !important;
+    color: #f28b82 !important;
+}
+
+.severity-medium {
+    background-color: rgba(227, 116, 0, 0.15) !important;
+    border-color: #fdd663 !important;
+    color: #fdd663 !important;
+}
+
+.severity-low, .severity-info {
+    background-color: rgba(27, 110, 243, 0.15) !important;
+    border-color: #8ab4f8 !important;
+    color: #8ab4f8 !important;
+}
+
